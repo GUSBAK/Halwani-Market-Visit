@@ -49,8 +49,8 @@ body {
 }
 
 .brand-logo {
-  width: 122px;
-  height: 52px;
+  width: 155px;
+  height: 110px;
   object-fit: contain;
   border-radius: 14px;
   background: white;
@@ -309,3 +309,6 @@ button:active, .file-button:active { transform: translateY(1px); }
   .screen { display: block; padding: 0; }
   .card, .hero-card, .visit-card, .stat-card { box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
 }
+
+.simple-sku-grid { grid-template-columns: 1.6fr 1fr auto; }
+@media (max-width: 720px) { .simple-sku-grid { grid-template-columns: 1fr; } }

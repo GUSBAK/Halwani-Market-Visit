@@ -15,10 +15,10 @@
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-lockup">
-        <img src="assets/halwani-logo.svg" alt="Halwani Bros" class="brand-logo" />
+        <img src="assets/halwani-logo.png" alt="Halwani Bros" class="brand-logo" />
         <div>
-          <p class="eyebrow">Food Service</p>
-          <h1>Market Visit</h1>
+          <p class="eyebrow">Halwani Bros</p>
+          <h1>Halwani Market Visit</h1>
         </div>
       </div>
       <div class="top-actions">
@@ -65,10 +65,10 @@
 
         <section class="card">
           <h2>Halwani Product Range</h2>
-          <p class="hint">Add or edit the range once. Every new visit will use this SKU list by default.</p>
+          <p class="hint">Add or edit the range once. Keep only the product name and SKU code.</p>
           <div class="product-add-grid">
             <input id="newProductName" placeholder="SKU name, example: MEZ Tahina 9kg" />
-            <input id="newProductCategory" placeholder="Category, example: Tahina" />
+            <input id="newProductCode" placeholder="SKU code, example: HT001" />
             <button id="addProductBtn" type="button" class="primary">Add SKU</button>
           </div>
         </section>
@@ -145,7 +145,7 @@
               <h2>Range Availability</h2>
               <button type="button" id="openProductsFromVisit" class="ghost mini">Edit Range</button>
             </div>
-            <p class="hint">Use your Halwani product range, then tick available SKUs and add notes.</p>
+            <p class="hint">Select the right Halwani SKU quickly. Keep it simple with product name and code.</p>
             <div class="add-from-range">
               <select id="productPicker"></select>
               <button type="button" id="addSelectedSkuBtn" class="secondary">Add Selected SKU</button>
@@ -199,7 +199,7 @@
           </section>
 
           <div class="sticky-actions">
-            <button type="submit" class="primary">Close Visit</button>
+            <button type="button" id="closeVisitBtn" class="primary">Close Visit</button>
             <button type="button" id="exportBottomBtn" class="secondary">Export Report</button>
           </div>
         </form>

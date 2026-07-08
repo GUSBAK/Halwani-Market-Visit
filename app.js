@@ -1,3 +1,4 @@
+
 const checklistItems = [
   'Planogram implemented',
   'Full range available',
@@ -12,21 +13,21 @@ const checklistItems = [
 ];
 
 const defaultProductRange = [
-  { id: 'mez-tahina-9kg', name: 'MEZ Tahina 9kg', category: 'Tahina' },
-  { id: 'al-shola-tahina-9kg', name: 'Al Shola Tahina 9kg', category: 'Tahina' },
-  { id: 'mez-fries-9x9', name: 'MEZ Fries 9x9', category: 'Frozen Fries' },
-  { id: 'mez-fries-6x6', name: 'MEZ Fries 6x6', category: 'Frozen Fries' },
-  { id: 'mez-ketchup', name: 'MEZ Ketchup', category: 'Condiments' },
-  { id: 'mez-hot-sauce', name: 'MEZ Hot Sauce', category: 'Condiments' },
-  { id: 'mez-mayo', name: 'MEZ Mayo', category: 'Condiments' },
-  { id: 'halwani-garlic-mayo-sachet', name: 'Halwani Garlic Mayo Sachet', category: 'Portions' },
-  { id: 'mez-salt-700g', name: 'MEZ Salt 700g', category: 'Salt' },
-  { id: 'halwani-maamoul', name: 'Halwani Maamoul', category: 'Bakery' },
-  { id: 'jammy-25g', name: 'Jammy 25g x100', category: 'Portions' },
-  { id: 'halwani-mozzarella', name: 'Halwani Mozzarella', category: 'Cheese' },
-  { id: 'mez-mortadella', name: 'MEZ Mortadella', category: 'Cold Cuts' },
-  { id: 'mez-smoked-turkey', name: 'MEZ Smoked Turkey', category: 'Cold Cuts' },
-  { id: 'halwani-halawa', name: 'Halwani Halawa', category: 'Halawa' }
+  { id: 'mez-tahina-9kg', name: 'MEZ Tahina 9kg', code: 'HT001' },
+  { id: 'al-shola-tahina-9kg', name: 'Al Shola Tahina 9kg', code: 'HT002' },
+  { id: 'mez-fries-9x9', name: 'MEZ Fries 9x9', code: 'HF001' },
+  { id: 'mez-fries-6x6', name: 'MEZ Fries 6x6', code: 'HF002' },
+  { id: 'mez-ketchup', name: 'MEZ Ketchup', code: 'HC001' },
+  { id: 'mez-hot-sauce', name: 'MEZ Hot Sauce', code: 'HC002' },
+  { id: 'mez-mayo', name: 'MEZ Mayo', code: 'HC003' },
+  { id: 'halwani-garlic-mayo-sachet', name: 'Halwani Garlic Mayo Sachet', code: 'HP001' },
+  { id: 'mez-salt-700g', name: 'MEZ Salt 700g', code: 'HS001' },
+  { id: 'halwani-maamoul', name: 'Halwani Maamoul', code: 'HB001' },
+  { id: 'jammy-25g', name: 'Jammy 25g x100', code: 'HJ001' },
+  { id: 'halwani-mozzarella', name: 'Halwani Mozzarella', code: 'HZ001' },
+  { id: 'mez-mortadella', name: 'MEZ Mortadella', code: 'HM001' },
+  { id: 'mez-smoked-turkey', name: 'MEZ Smoked Turkey', code: 'HM002' },
+  { id: 'halwani-halawa', name: 'Halwani Halawa', code: 'HH001' }
 ];
 
 const state = {
@@ -34,7 +35,8 @@ const state = {
   productRange: loadProductRange(),
   currentVisit: null,
   photos: [],
-  gps: null
+  gps: null,
+  lastScreenBeforeProducts: 'dashboard'
 };
 
 const $ = (id) => document.getElementById(id);
@@ -42,10 +44,15 @@ const $ = (id) => document.getElementById(id);
 function loadProductRange() {
   try {
     const stored = JSON.parse(localStorage.getItem('halwaniProductRange') || 'null');
-    return Array.isArray(stored) && stored.length ? stored : defaultProductRange;
-  } catch {
-    return defaultProductRange;
-  }
+    if (Array.isArray(stored) && stored.length) {
+      return stored.map(item => ({
+        id: item.id || uid(),
+        name: item.name || '',
+        code: item.code || item.category || ''
+      }));
+    }
+  } catch {}
+  return [...defaultProductRange];
 }
 
 function saveState() {
@@ -101,9 +108,8 @@ function renderChecklist(data = {}) {
 function skusFromProductRange() {
   return state.productRange.map(product => ({
     name: product.name,
-    category: product.category,
-    available: true,
-    note: ''
+    code: product.code || '',
+    available: true
   }));
 }
 
@@ -114,12 +120,11 @@ function renderSkus(skus = skusFromProductRange()) {
     const row = document.createElement('div');
     row.className = 'sku-row';
     row.innerHTML = `
-      <div class="sku-main-grid">
-        <input class="sku-category" value="${escapeHtml(sku.category || '')}" placeholder="Category">
+      <div class="sku-main-grid simple-sku-grid">
         <input class="sku-name" value="${escapeHtml(sku.name || '')}" placeholder="SKU name">
+        <input class="sku-code" value="${escapeHtml(sku.code || '')}" placeholder="SKU code">
         <label><input class="sku-available" type="checkbox" ${sku.available ? 'checked' : ''}> Available</label>
       </div>
-      <input class="sku-note" placeholder="Note, facings, issue, or missing reason" value="${escapeHtml(sku.note || '')}">
     `;
     container.appendChild(row);
   });
@@ -130,8 +135,8 @@ function renderProductPicker() {
   if (!picker) return;
   picker.innerHTML = state.productRange
     .slice()
-    .sort((a, b) => `${a.category}${a.name}`.localeCompare(`${b.category}${b.name}`))
-    .map(product => `<option value="${escapeHtml(product.id)}">${escapeHtml(product.category)} - ${escapeHtml(product.name)}</option>`)
+    .sort((a, b) => `${a.code}${a.name}`.localeCompare(`${b.code}${b.name}`))
+    .map(product => `<option value="${escapeHtml(product.id)}">${escapeHtml(product.name)}${product.code ? ` (${escapeHtml(product.code)})` : ''}</option>`)
     .join('');
 }
 
@@ -185,48 +190,50 @@ function renderProductRange() {
   const list = $('productRangeList');
   const badge = $('productCountBadge');
   if (!list || !badge) return;
-
   badge.textContent = `${state.productRange.length} SKUs`;
   list.innerHTML = '';
 
-  const grouped = state.productRange
+  state.productRange
     .slice()
-    .sort((a, b) => `${a.category}${a.name}`.localeCompare(`${b.category}${b.name}`));
-
-  grouped.forEach(product => {
-    const row = document.createElement('div');
-    row.className = 'product-row';
-    row.innerHTML = `
-      <div class="product-row-top">
-        <div>
-          <strong>${escapeHtml(product.name)}</strong>
-          <p class="hint">${escapeHtml(product.category || 'Uncategorized')}</p>
+    .sort((a, b) => `${a.code}${a.name}`.localeCompare(`${b.code}${b.name}`))
+    .forEach(product => {
+      const row = document.createElement('div');
+      row.className = 'product-row';
+      row.innerHTML = `
+        <div class="product-row-top">
+          <div>
+            <strong>${escapeHtml(product.name)}</strong>
+            <p class="hint">SKU Code: ${escapeHtml(product.code || '')}</p>
+          </div>
+          <button type="button" class="ghost danger-text remove-product">Remove</button>
         </div>
-        <button type="button" class="ghost danger-text remove-product">Remove</button>
-      </div>
-    `;
-    row.querySelector('.remove-product').addEventListener('click', () => {
-      state.productRange = state.productRange.filter(item => item.id !== product.id);
-      saveProductRange();
+      `;
+      row.querySelector('.remove-product').addEventListener('click', () => {
+        state.productRange = state.productRange.filter(item => item.id !== product.id);
+        saveProductRange();
+      });
+      list.appendChild(row);
     });
-    list.appendChild(row);
-  });
 }
 
-function startNewVisit() {
-  state.currentVisit = null;
-  state.gps = null;
-  state.photos = [];
+function resetVisitForm() {
   $('marketVisitForm').reset();
   $('visitId').value = uid();
   $('visitor').value = 'Ghassan Baker';
   $('city').value = 'Jeddah';
   $('gpsStatus').textContent = 'Not captured yet.';
+  state.currentVisit = null;
+  state.photos = [];
+  state.gps = null;
   renderChecklist();
   renderProductPicker();
   renderSkus();
   renderPhotos([]);
   renderActions([]);
+}
+
+function startNewVisit() {
+  resetVisitForm();
   showScreen('visitForm');
 }
 
@@ -246,7 +253,7 @@ function openVisit(visit) {
   $('gpsStatus').textContent = visit.gps ? `${visit.gps.lat.toFixed(6)}, ${visit.gps.lng.toFixed(6)}` : 'Not captured yet.';
   renderChecklist(visit.checklist || {});
   renderProductPicker();
-  renderSkus(visit.skus || undefined);
+  renderSkus(visit.skus?.length ? visit.skus : skusFromProductRange());
   renderPhotos(visit.photos || []);
   renderActions(visit.actions || []);
   showScreen('visitForm');
@@ -261,11 +268,10 @@ function collectVisit() {
   });
 
   const skus = [...document.querySelectorAll('.sku-row')].map(row => ({
-    category: row.querySelector('.sku-category').value,
     name: row.querySelector('.sku-name').value,
-    available: row.querySelector('.sku-available').checked,
-    note: row.querySelector('.sku-note').value
-  })).filter(sku => sku.name.trim());
+    code: row.querySelector('.sku-code').value,
+    available: row.querySelector('.sku-available').checked
+  })).filter(sku => sku.name.trim() || sku.code.trim());
 
   const actions = [...document.querySelectorAll('.action-row')].map(row => ({
     title: row.querySelector('.action-title').value,
@@ -298,6 +304,10 @@ function collectVisit() {
 }
 
 function saveVisit({ close = false } = {}) {
+  if (!$('customer').value.trim() || !$('branch').value.trim()) {
+    toast('Add customer and branch first.');
+    return;
+  }
   const visit = collectVisit();
   const existingIndex = state.visits.findIndex(v => v.id === visit.id);
   if (existingIndex >= 0) state.visits[existingIndex] = visit;
@@ -306,6 +316,7 @@ function saveVisit({ close = false } = {}) {
   saveState();
 
   if (close) {
+    resetVisitForm();
     showScreen('dashboard');
     toast('Visit closed and saved.');
   } else {
@@ -358,7 +369,6 @@ function captureGps() {
 async function handlePhotos(event) {
   const files = [...event.target.files];
   if (!files.length) return;
-
   const category = $('photoCategory').value;
   const note = $('photoNote').value;
   toast('Adding photos...');
@@ -394,7 +404,7 @@ function fileToCompressedDataUrl(file) {
         canvas.height = Math.round(image.height * ratio);
         const ctx = canvas.getContext('2d');
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.82));
+        resolve(canvas.toDataURL('image/jpeg', 0.86));
       };
       image.onerror = () => resolve(reader.result);
       image.src = reader.result;
@@ -406,7 +416,7 @@ function fileToCompressedDataUrl(file) {
 
 function addProduct() {
   const name = $('newProductName').value.trim();
-  const category = $('newProductCategory').value.trim() || 'Uncategorized';
+  const code = $('newProductCode').value.trim();
   if (!name) {
     toast('Add a SKU name first.');
     return;
@@ -416,35 +426,33 @@ function addProduct() {
     toast('This SKU is already in the range.');
     return;
   }
-  state.productRange.push({ id: uid(), name, category });
+  state.productRange.push({ id: uid(), name, code });
   $('newProductName').value = '';
-  $('newProductCategory').value = '';
+  $('newProductCode').value = '';
   saveProductRange();
   toast('SKU added to product range.');
+}
+
+function collectCurrentSkus() {
+  return [...document.querySelectorAll('.sku-row')].map(row => ({
+    name: row.querySelector('.sku-name').value,
+    code: row.querySelector('.sku-code').value,
+    available: row.querySelector('.sku-available').checked
+  })).filter(sku => sku.name.trim() || sku.code.trim());
 }
 
 function addSelectedSkuToVisit() {
   const id = $('productPicker').value;
   const product = state.productRange.find(item => item.id === id);
   if (!product) return;
-
   const currentSkus = collectCurrentSkus();
   const exists = currentSkus.some(sku => sku.name.toLowerCase() === product.name.toLowerCase());
   if (exists) {
     toast('SKU already exists in this visit.');
     return;
   }
-  currentSkus.push({ name: product.name, category: product.category, available: true, note: '' });
+  currentSkus.push({ name: product.name, code: product.code || '', available: true });
   renderSkus(currentSkus);
-}
-
-function collectCurrentSkus() {
-  return [...document.querySelectorAll('.sku-row')].map(row => ({
-    category: row.querySelector('.sku-category').value,
-    name: row.querySelector('.sku-name').value,
-    available: row.querySelector('.sku-available').checked,
-    note: row.querySelector('.sku-note').value
-  })).filter(sku => sku.name.trim() || sku.category.trim() || sku.note.trim());
 }
 
 function exportCurrentVisit() {
@@ -454,6 +462,7 @@ function exportCurrentVisit() {
 
 function exportReport(visit) {
   const gpsLink = visit.gps ? `https://www.google.com/maps?q=${visit.gps.lat},${visit.gps.lng}` : '';
+  const logoUrl = new URL('assets/halwani-logo.png', window.location.href).href;
   const missingSkus = (visit.skus || []).filter(sku => !sku.available);
   const photos = visit.photos || [];
   const photoHtml = photos.length
@@ -478,7 +487,7 @@ function exportReport(visit) {
     body { font-family: Arial, sans-serif; color: var(--text); margin: 24px; background: white; }
     .no-print { padding: 10px 14px; background: var(--green); color: white; border: 0; border-radius: 10px; font-weight: bold; margin-bottom: 16px; }
     .report-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
-    .logo { width: 160px; height: auto; }
+    .logo { width: 170px; height: auto; }
     h1 { color: var(--green); margin: 0 0 4px; font-size: 30px; }
     h2 { color: var(--green-dark); border-bottom: 3px solid var(--green-soft); padding-bottom: 8px; margin: 24px 0 12px; font-size: 22px; }
     p { line-height: 1.35; }
@@ -488,28 +497,19 @@ function exportReport(visit) {
     th, td { border: 1px solid var(--border); padding: 8px; text-align: left; vertical-align: top; }
     th { background: var(--green-soft); }
     .pill { display: inline-block; padding: 4px 8px; border-radius: 99px; background: var(--green-soft); color: var(--green-dark); font-weight: bold; }
-    .page-break-before { break-before: page; page-break-before: always; }
-    .photos-section { break-before: page; page-break-before: always; }
-    .photos-grid-report { font-size: 0; }
-    .photo-card-report { display: inline-block; vertical-align: top; width: calc(50% - 8px); margin: 0 16px 16px 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; font-size: 16px; break-inside: avoid; page-break-inside: avoid; }
-    .photo-card-report:nth-child(2n) { margin-right: 0; }
-    .photo-card-report img { width: 100%; height: 165px; object-fit: cover; display: block; }
-    .photo-card-report p { margin: 8px; min-height: 34px; }
     .section { break-inside: avoid; page-break-inside: avoid; }
+    .photos-section { break-before: page; page-break-before: always; }
+    .photos-grid-report { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+    .photo-card-report { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; }
+    .photo-card-report img { width: 100%; height: auto; max-height: 240px; object-fit: contain; display: block; background: #fff; }
+    .photo-card-report p { margin: 8px; min-height: 34px; }
     @page { size: A4; margin: 10mm; }
     @media print {
       body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .no-print { display: none; }
-      .report-header { margin-bottom: 8px; }
-      .logo { width: 145px; }
-      h1 { font-size: 27px; }
-      h2 { font-size: 20px; margin: 18px 0 10px; }
-      th, td { padding: 6px; }
-      .summary { gap: 8px; }
-      .box { padding: 9px; min-height: 50px; }
-      .photos-section, .page-break-before { break-before: page !important; page-break-before: always !important; }
-      .photo-card-report { break-inside: avoid !important; page-break-inside: avoid !important; margin-bottom: 12px; }
-      .photo-card-report img { height: 150px; }
+      .photos-grid-report { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .photo-card-report, .section { break-inside: avoid !important; page-break-inside: avoid !important; }
+      .photo-card-report img { max-height: 220px; }
     }
   </style>
 </head>
@@ -521,7 +521,7 @@ function exportReport(visit) {
       <h1>Halwani Market Visit Report</h1>
       <p>${escapeHtml(formatDate(visit.createdAt))}</p>
     </div>
-    <img class="logo" src="${halwaniLogoDataUri()}" alt="Halwani Bros">
+    <img class="logo" src="${logoUrl}" alt="Halwani Bros">
   </div>
 
   <div class="summary">
@@ -546,14 +546,14 @@ function exportReport(visit) {
   <section class="section">
     <h2>Range Availability</h2>
     <table>
-      <tr><th>Category</th><th>SKU</th><th>Status</th><th>Note</th></tr>
-      ${(visit.skus || []).map(sku => `<tr><td>${escapeHtml(sku.category || '')}</td><td>${escapeHtml(sku.name)}</td><td>${sku.available ? 'Available' : 'Missing'}</td><td>${escapeHtml(sku.note || '')}</td></tr>`).join('')}
+      <tr><th>SKU Code</th><th>SKU Name</th><th>Status</th></tr>
+      ${(visit.skus || []).map(sku => `<tr><td>${escapeHtml(sku.code || '')}</td><td>${escapeHtml(sku.name || '')}</td><td>${sku.available ? 'Available' : 'Missing'}</td></tr>`).join('')}
     </table>
   </section>
 
   <section class="section">
     <h2>Missing SKUs</h2>
-    ${missingSkus.length ? `<ul>${missingSkus.map(sku => `<li>${escapeHtml(sku.category || '')} - ${escapeHtml(sku.name)} ${sku.note ? `, ${escapeHtml(sku.note)}` : ''}</li>`).join('')}</ul>` : '<p>No missing SKUs recorded.</p>'}
+    ${missingSkus.length ? `<ul>${missingSkus.map(sku => `<li>${escapeHtml(sku.name)}${sku.code ? ` (${escapeHtml(sku.code)})` : ''}</li>`).join('')}</ul>` : '<p>No missing SKUs recorded.</p>'}
   </section>
 
   <section class="section">
@@ -587,11 +587,6 @@ function exportReport(visit) {
   reportWindow.document.close();
 }
 
-function halwaniLogoDataUri() {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 160"><rect width="520" height="160" rx="28" fill="#fff"/><g transform="translate(26 20)"><path d="M52 14c25 0 45 19 45 43 0 29-27 55-67 55-9 0-18-1-27-4 32-7 47-25 47-48 0-19-13-34-33-39 10-5 22-7 35-7z" fill="#006b3f"/><path d="M83 43c15 10 23 24 23 41 0 16-7 30-19 40 25-9 42-29 42-53 0-18-10-32-27-41-3 5-9 10-19 13z" fill="#d6a642"/><text x="140" y="66" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="800" fill="#006b3f">Halwani</text><text x="144" y="106" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" letter-spacing="3" fill="#004d2f">BROS</text></g></svg>`;
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-}
-
 function formatDate(dateString) {
   if (!dateString) return '';
   return new Intl.DateTimeFormat('en-SA', {
@@ -614,11 +609,11 @@ function escapeHtml(value) {
 
 $('newVisitBtn').addEventListener('click', startNewVisit);
 $('startVisitHero').addEventListener('click', startNewVisit);
-$('productsTopBtn').addEventListener('click', () => showScreen('productsScreen'));
-$('manageProductsHero').addEventListener('click', () => showScreen('productsScreen'));
-$('productsBackBtn').addEventListener('click', () => showScreen('dashboard'));
+$('productsTopBtn').addEventListener('click', () => { state.lastScreenBeforeProducts = 'dashboard'; showScreen('productsScreen'); });
+$('manageProductsHero').addEventListener('click', () => { state.lastScreenBeforeProducts = 'dashboard'; showScreen('productsScreen'); });
+$('productsBackBtn').addEventListener('click', () => showScreen(state.lastScreenBeforeProducts || 'dashboard'));
 $('backBtn').addEventListener('click', () => showScreen('dashboard'));
-$('openProductsFromVisit').addEventListener('click', () => showScreen('productsScreen'));
+$('openProductsFromVisit').addEventListener('click', () => { state.lastScreenBeforeProducts = 'visitForm'; showScreen('productsScreen'); });
 $('captureGps').addEventListener('click', captureGps);
 $('cameraInput').addEventListener('change', handlePhotos);
 $('libraryInput').addEventListener('change', handlePhotos);
@@ -633,11 +628,12 @@ $('resetProductsBtn').addEventListener('click', () => {
 });
 $('addSkuBtn').addEventListener('click', () => {
   const currentSkus = collectCurrentSkus();
-  currentSkus.push({ name: '', category: '', available: true, note: '' });
+  currentSkus.push({ name: '', code: '', available: true });
   renderSkus(currentSkus);
 });
 $('exportBtn').addEventListener('click', exportCurrentVisit);
 $('exportBottomBtn').addEventListener('click', exportCurrentVisit);
+$('closeVisitBtn').addEventListener('click', () => saveVisit({ close: true }));
 $('marketVisitForm').addEventListener('submit', (event) => {
   event.preventDefault();
   saveVisit({ close: true });
