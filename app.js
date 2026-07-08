@@ -113,21 +113,34 @@ function skusFromProductRange() {
   }));
 }
 
-function renderSkus(skus = skusFromProductRange()) {
+function renderSkus(skus = []) {
   const container = $('skuList');
   container.innerHTML = '';
-  skus.forEach((sku) => {
+
+  if (!skus.length) {
+    container.innerHTML = '<div class="empty-state">No products selected yet. Use the selector above to add products.</div>';
+    return;
+  }
+
+  skus.forEach((sku, index) => {
     const row = document.createElement('div');
     row.className = 'sku-row';
     row.innerHTML = `
       <div class="range-row-clean">
-        <div class="range-input-pair">
-          <input class="sku-name" value="${escapeHtml(sku.name || '')}" placeholder="Product name">
-          <input class="sku-code" value="${escapeHtml(sku.code || '')}" placeholder="Code">
-        </div>
-        <label><input class="sku-available" type="checkbox" ${sku.available ? 'checked' : ''}> Available</label>
+        <input class="sku-name" value="${escapeHtml(sku.name || '')}" placeholder="Product name">
+        <input class="sku-code" value="${escapeHtml(sku.code || '')}" placeholder="Code">
+        <select class="sku-status">
+          <option value="Available" ${sku.status === 'Available' || sku.available !== false ? 'selected' : ''}>Available</option>
+          <option value="Missing" ${sku.status === 'Missing' || sku.available === false ? 'selected' : ''}>Missing</option>
+        </select>
+        <button type="button" class="ghost remove-sku">Remove</button>
       </div>
     `;
+    row.querySelector('.remove-sku').addEventListener('click', () => {
+      const current = collectCurrentSkus();
+      current.splice(index, 1);
+      renderSkus(current);
+    });
     container.appendChild(row);
   });
 }
@@ -240,7 +253,7 @@ function resetVisitForm() {
   state.gps = null;
   renderChecklist();
   renderProductPicker();
-  renderSkus();
+  renderSkus([]);
   renderPhotos([]);
   renderActions([]);
 }
@@ -266,7 +279,7 @@ function openVisit(visit) {
   $('gpsStatus').textContent = visit.gps ? `${visit.gps.lat.toFixed(6)}, ${visit.gps.lng.toFixed(6)}` : 'Not captured yet.';
   renderChecklist(visit.checklist || {});
   renderProductPicker();
-  renderSkus(visit.skus?.length ? visit.skus : skusFromProductRange());
+  renderSkus(visit.skus?.length ? visit.skus : []);
   renderPhotos(visit.photos || []);
   renderActions(visit.actions || []);
   showScreen('visitForm');
@@ -280,11 +293,15 @@ function collectVisit() {
     checklist[item] = { status, note: noteInput?.value || '' };
   });
 
-  const skus = [...document.querySelectorAll('.sku-row')].map(row => ({
-    name: row.querySelector('.sku-name')?.value || '',
-    code: row.querySelector('.sku-code')?.value || '',
-    available: row.querySelector('.sku-available')?.checked ?? true
-  })).filter(sku => sku.name.trim() || sku.code.trim());
+  const skus = [...document.querySelectorAll('.sku-row')].map(row => {
+    const status = row.querySelector('.sku-status')?.value || (row.querySelector('.sku-available')?.checked === false ? 'Missing' : 'Available');
+    return {
+      name: row.querySelector('.sku-name')?.value || '',
+      code: row.querySelector('.sku-code')?.value || '',
+      status,
+      available: status === 'Available'
+    };
+  }).filter(sku => sku.name.trim() || sku.code.trim());
 
   const actions = [...document.querySelectorAll('.action-row')].map(row => ({
     title: row.querySelector('.action-title')?.value || '',
@@ -330,12 +347,12 @@ function saveVisit({ close = false } = {}) {
       channel: $('channel')?.value || '',
       visitor: $('visitor')?.value || '',
       visitType: $('visitType')?.value || '',
-      createdAt: new Date().toISOString(),
+      createdAt: state.currentVisit?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       closedAt: new Date().toISOString(),
       gps: state.gps,
       checklist: {},
-      skus: [],
+      skus: collectCurrentSkus(),
       photos: state.photos || [],
       competitorNotes: $('competitorNotes')?.value || '',
       actions: [],
@@ -343,13 +360,13 @@ function saveVisit({ close = false } = {}) {
     };
   }
 
-  if (!visit.customer) visit.customer = 'Unnamed Customer';
-  if (!visit.branch) visit.branch = 'Unnamed Branch';
+  visit.customer = visit.customer || 'Unnamed Customer';
+  visit.branch = visit.branch || 'Unnamed Branch';
 
   const existingIndex = state.visits.findIndex(v => v.id === visit.id);
   if (existingIndex >= 0) state.visits[existingIndex] = visit;
   else state.visits.unshift(visit);
-  state.currentVisit = visit;
+
   saveState();
 
   if (close) {
@@ -358,9 +375,10 @@ function saveVisit({ close = false } = {}) {
     state.gps = null;
     renderDashboard();
     showScreen('dashboard');
-    setTimeout(() => resetVisitForm(), 100);
+    setTimeout(() => resetVisitForm(), 150);
     toast('Visit closed and saved.');
   } else {
+    state.currentVisit = visit;
     toast('Visit saved.');
   }
 }
@@ -475,11 +493,15 @@ function addProduct() {
 }
 
 function collectCurrentSkus() {
-  return [...document.querySelectorAll('.sku-row')].map(row => ({
-    name: row.querySelector('.sku-name')?.value || '',
-    code: row.querySelector('.sku-code')?.value || '',
-    available: row.querySelector('.sku-available')?.checked ?? true
-  })).filter(sku => sku.name.trim() || sku.code.trim());
+  return [...document.querySelectorAll('.sku-row')].map(row => {
+    const status = row.querySelector('.sku-status')?.value || (row.querySelector('.sku-available')?.checked === false ? 'Missing' : 'Available');
+    return {
+      name: row.querySelector('.sku-name')?.value || '',
+      code: row.querySelector('.sku-code')?.value || '',
+      status,
+      available: status === 'Available'
+    };
+  }).filter(sku => sku.name.trim() || sku.code.trim());
 }
 
 function addSelectedSkuToVisit() {
@@ -487,12 +509,15 @@ function addSelectedSkuToVisit() {
   const product = state.productRange.find(item => item.id === id);
   if (!product) return;
   const currentSkus = collectCurrentSkus();
-  const exists = currentSkus.some(sku => sku.name.toLowerCase() === product.name.toLowerCase());
+  const exists = currentSkus.some(sku => 
+    sku.name.toLowerCase() === product.name.toLowerCase() || 
+    (product.code && sku.code.toLowerCase() === product.code.toLowerCase())
+  );
   if (exists) {
     toast('SKU already exists in this visit.');
     return;
   }
-  currentSkus.push({ name: product.name, code: product.code || '', available: true });
+  currentSkus.push({ name: product.name, code: product.code || '', status: 'Available', available: true });
   renderSkus(currentSkus);
 }
 
@@ -501,19 +526,33 @@ function exportCurrentVisit() {
   exportReport(visit);
 }
 
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  return chunks;
+}
+
 function exportReport(visit) {
   const gpsLink = visit.gps ? `https://www.google.com/maps?q=${visit.gps.lat},${visit.gps.lng}` : '';
   const logoUrl = new URL('assets/halwani-logo.png', window.location.href).href;
   const missingSkus = (visit.skus || []).filter(sku => !sku.available);
   const photos = visit.photos || [];
-  const photoHtml = photos.length
-    ? photos.map(photo => `
-        <article class="photo-card-report">
-          <img src="${photo.dataUrl}" alt="${escapeHtml(photo.category)}">
-          <p><strong>${escapeHtml(photo.category)}</strong>${photo.note ? `<br>${escapeHtml(photo.note)}` : ''}</p>
-        </article>
+  const photoPages = photos.length ? chunkArray(photos, 4) : [];
+  const photoHtml = photoPages.length
+    ? photoPages.map((page, pageIndex) => `
+        <section class="photos-page ${pageIndex === 0 ? 'photos-section' : 'page-break-before'}">
+          ${pageIndex === 0 ? '<h2>Photos</h2>' : '<h2>Photos, continued</h2>'}
+          <div class="photos-grid-report">
+            ${page.map(photo => `
+              <article class="photo-card-report">
+                <img src="${photo.dataUrl}" alt="${escapeHtml(photo.category)}">
+                <p><strong>${escapeHtml(photo.category)}</strong>${photo.note ? `<br>${escapeHtml(photo.note)}` : ''}</p>
+              </article>
+            `).join('')}
+          </div>
+        </section>
       `).join('')
-    : '<p>No photos added.</p>';
+    : '<section class="photos-section"><h2>Photos</h2><p>No photos added.</p></section>';
 
   const reportHtml = `
 <!doctype html>
@@ -526,7 +565,7 @@ function exportReport(visit) {
     :root { --green:#006b3f; --green-dark:#004d2f; --green-soft:#e6f3ee; --border:#dfe8e4; --text:#18231f; }
     * { box-sizing: border-box; }
     body { font-family: Arial, sans-serif; color: var(--text); margin: 24px; background: white; }
-    .no-print { padding: 10px 14px; background: var(--green); color: white; border: 0; border-radius: 10px; font-weight: bold; margin-bottom: 16px; }
+    .no-print { padding: 10px 14px; background: var(--green); color: white; border: 0; border-radius: 10px; font-weight: bold; margin-bottom: 16px; text-decoration:none; display:inline-block; }
     .report-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
     .logo { width: 170px; height: auto; }
     h1 { color: var(--green); margin: 0 0 4px; font-size: 30px; }
@@ -539,23 +578,23 @@ function exportReport(visit) {
     th { background: var(--green-soft); }
     .pill { display: inline-block; padding: 4px 8px; border-radius: 99px; background: var(--green-soft); color: var(--green-dark); font-weight: bold; }
     .section { break-inside: avoid; page-break-inside: avoid; }
-    .photos-section { break-before: page; page-break-before: always; }
-    .photos-grid-report { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
-    .photo-card-report { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; height: 205px; display: grid; grid-template-rows: 160px 45px; }
-    .photo-card-report img { width: 100%; height: 160px; object-fit: contain; display: block; background: #fff; }
+    .photos-section { break-before: page; page-break-before: always; } .page-break-before { break-before: page; page-break-before: always; }
+    .photos-grid-report { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }
+    .photo-card-report { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; height: 310px; display: grid; grid-template-rows: 260px 50px; break-inside: avoid; page-break-inside: avoid; }
+    .photo-card-report img { width: 100%; height: 260px; object-fit: contain; display: block; background: #fff; }
     .photo-card-report p { margin: 6px 8px; font-size: 12px; line-height: 1.2; overflow: hidden; }
     @page { size: A4; margin: 10mm; }
     @media print {
       body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .no-print { display: none; }
-      .photos-grid-report { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
+      .photos-grid-report { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }
       .photo-card-report, .section { break-inside: avoid !important; page-break-inside: avoid !important; }
-      .photo-card-report img { width: 100%; height: 160px; object-fit: contain; display: block; background: #fff; }
+      .photo-card-report img { width: 100%; height: 260px; object-fit: contain; display: block; background: #fff; }
     }
   </style>
 </head>
 <body>
-  <button class="no-print" onclick="window.print()">Print / Save PDF</button> <button class="no-print" onclick="history.back(); setTimeout(function(){ window.close(); }, 100);">Back to App</button>
+  <button class="no-print" onclick="window.print()">Print / Save PDF</button> <a class="no-print link-button" href="/" target="_self">Back to App</a>
 
   <div class="report-header">
     <div>
@@ -585,7 +624,7 @@ function exportReport(visit) {
   </section>
 
   <section class="section">
-    <h2>Range Availability</h2>
+    <h2>Range</h2>
     <table>
       <tr><th>Code</th><th>Product Name</th><th>Status</th></tr>
       ${(visit.skus || []).map(sku => `<tr><td>${escapeHtml(sku.code || '')}</td><td>${escapeHtml(sku.name || '')}</td><td>${sku.available ? 'Available' : 'Missing'}</td></tr>`).join('')}
@@ -602,10 +641,7 @@ function exportReport(visit) {
     <p>${escapeHtml(visit.competitorNotes || 'No competitor notes recorded.')}</p>
   </section>
 
-  <section class="photos-section">
-    <h2>Photos</h2>
-    <div class="photos-grid-report">${photoHtml}</div>
-  </section>
+  ${photoHtml}
 
   <section class="section">
     <h2>Actions Required</h2>
@@ -652,7 +688,7 @@ $('closePhotoViewer').addEventListener('click', closePhotoViewer);
 $('photoViewer').addEventListener('click', (event) => {
   if (event.target.id === 'photoViewer') closePhotoViewer();
 });
-function closeVisitNow() {
+window.closeVisitNow = function closeVisitNow() {
   saveVisit({ close: true });
 }
 
@@ -677,12 +713,12 @@ $('resetProductsBtn').addEventListener('click', () => {
 });
 $('addSkuBtn').addEventListener('click', () => {
   const currentSkus = collectCurrentSkus();
-  currentSkus.push({ name: '', code: '', available: true });
+  currentSkus.push({ name: '', code: '', status: 'Available', available: true });
   renderSkus(currentSkus);
 });
 $('exportBtn').addEventListener('click', exportCurrentVisit);
 $('exportBottomBtn').addEventListener('click', exportCurrentVisit);
-$('closeVisitBtn').addEventListener('click', closeVisitNow);
+$('closeVisitBtn')?.addEventListener('click', window.closeVisitNow);
 $('marketVisitForm').addEventListener('submit', (event) => {
   event.preventDefault();
   saveVisit({ close: true });
@@ -692,5 +728,5 @@ renderDashboard();
 renderProductRange();
 renderProductPicker();
 renderChecklist();
-renderSkus();
+renderSkus([]);
 renderActions([]);

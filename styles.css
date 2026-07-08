@@ -466,3 +466,49 @@ input[type="radio"], input[type="checkbox"] {
 }
 
 /* Report print fix: use fixed card size so photos never split */
+
+
+/* V7 final fixes */
+.brand-logo {
+  width: 155px !important;
+  height: 110px !important;
+  object-fit: contain !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+.range-row-clean {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.5fr) minmax(78px, .5fr) minmax(96px, .55fr) auto !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.range-row-clean input,
+.range-row-clean select {
+  min-height: 44px !important;
+  padding: 10px !important;
+}
+
+.range-row-clean .remove-sku {
+  min-height: 44px !important;
+  padding: 10px !important;
+}
+
+#skuList {
+  gap: 8px !important;
+}
+
+.sku-row {
+  padding: 10px !important;
+}
+
+@media (max-width: 720px) {
+  .range-row-clean {
+    grid-template-columns: minmax(0, 1.35fr) minmax(70px, .55fr) minmax(86px, .55fr) !important;
+  }
+  .range-row-clean .remove-sku {
+    grid-column: 1 / -1;
+  }
+}
