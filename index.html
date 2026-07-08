@@ -199,7 +199,7 @@
           </section>
 
           <div class="sticky-actions">
-            <button type="button" id="closeVisitBtn" class="primary" onclick="closeVisitNow()">Close Visit</button>
+            <button type="button" id="closeVisitBtn" class="primary" onclick="return closeVisitNow(event)">Close Visit</button>
             <button type="button" id="exportBottomBtn" class="secondary">Export Report</button>
           </div>
         </form>
@@ -223,6 +223,7 @@
       <div class="visit-actions">
         <button class="ghost open-visit">Open</button>
         <button class="secondary export-visit">Export</button>
+        <button class="ghost danger-text delete-visit">Delete</button>
       </div>
     </article>
   </template>

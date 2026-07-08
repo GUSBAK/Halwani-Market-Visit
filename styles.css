@@ -512,3 +512,24 @@ input[type="radio"], input[type="checkbox"] {
     grid-column: 1 / -1;
   }
 }
+
+
+/* V8 visit history actions */
+.visit-actions {
+  flex-wrap: wrap;
+}
+
+.visit-actions button {
+  min-width: 82px;
+}
+
+.delete-visit {
+  color: var(--danger) !important;
+  border-color: rgba(167, 53, 53, .25) !important;
+}
+
+@media (max-width: 720px) {
+  .visit-actions {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}

@@ -333,6 +333,62 @@ function collectVisit() {
   };
 }
 
+function goDashboardHard() {
+  document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+  $('dashboard')?.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function closeVisitToDashboard() {
+  let visit = null;
+
+  try {
+    visit = collectVisit();
+  } catch (error) {
+    console.error('Close visit fallback:', error);
+    visit = {
+      id: $('visitId')?.value || uid(),
+      customer: $('customer')?.value || 'Unnamed Customer',
+      branch: $('branch')?.value || 'Unnamed Branch',
+      city: $('city')?.value || '',
+      channel: $('channel')?.value || '',
+      visitor: $('visitor')?.value || '',
+      visitType: $('visitType')?.value || '',
+      createdAt: state.currentVisit?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      closedAt: new Date().toISOString(),
+      gps: state.gps,
+      checklist: {},
+      skus: typeof collectCurrentSkus === 'function' ? collectCurrentSkus() : [],
+      photos: state.photos || [],
+      competitorNotes: $('competitorNotes')?.value || '',
+      actions: [],
+      visitNotes: $('visitNotes')?.value || ''
+    };
+  }
+
+  visit.customer = visit.customer || 'Unnamed Customer';
+  visit.branch = visit.branch || 'Unnamed Branch';
+
+  const existingIndex = state.visits.findIndex(v => v.id === visit.id);
+  if (existingIndex >= 0) state.visits[existingIndex] = visit;
+  else state.visits.unshift(visit);
+
+  localStorage.setItem('halwaniVisits', JSON.stringify(state.visits));
+
+  state.currentVisit = null;
+  state.photos = [];
+  state.gps = null;
+
+  renderDashboard();
+  goDashboardHard();
+  toast('Visit closed and saved.');
+
+  setTimeout(() => {
+    try { resetVisitForm(); } catch (error) { console.error(error); }
+  }, 250);
+}
+
 function saveVisit({ close = false } = {}) {
   let visit;
   try {
@@ -370,17 +426,23 @@ function saveVisit({ close = false } = {}) {
   saveState();
 
   if (close) {
-    state.currentVisit = null;
-    state.photos = [];
-    state.gps = null;
-    renderDashboard();
-    showScreen('dashboard');
-    setTimeout(() => resetVisitForm(), 150);
-    toast('Visit closed and saved.');
+    closeVisitToDashboard();
   } else {
     state.currentVisit = visit;
     toast('Visit saved.');
   }
+}
+
+function deleteVisit(visitId) {
+  const visit = state.visits.find(v => v.id === visitId);
+  const label = visit ? `${visit.customer || 'Unnamed'} - ${visit.branch || 'Branch'}` : 'this visit';
+  if (!confirm(`Delete ${label}?`)) return;
+
+  state.visits = state.visits.filter(v => v.id !== visitId);
+  localStorage.setItem('halwaniVisits', JSON.stringify(state.visits));
+  if (state.currentVisit?.id === visitId) state.currentVisit = null;
+  renderDashboard();
+  toast('Visit deleted.');
 }
 
 function renderDashboard() {
@@ -402,6 +464,7 @@ function renderDashboard() {
     tpl.querySelector('p').textContent = `${visit.city || ''} • ${formatDate(visit.createdAt)} • ${visit.actions?.length || 0} actions • ${visit.photos?.length || 0} photos`;
     tpl.querySelector('.open-visit').addEventListener('click', () => openVisit(visit));
     tpl.querySelector('.export-visit').addEventListener('click', () => exportReport(visit));
+    tpl.querySelector('.delete-visit')?.addEventListener('click', () => deleteVisit(visit.id));
     list.appendChild(tpl);
   });
 }
@@ -688,9 +751,22 @@ $('closePhotoViewer').addEventListener('click', closePhotoViewer);
 $('photoViewer').addEventListener('click', (event) => {
   if (event.target.id === 'photoViewer') closePhotoViewer();
 });
-window.closeVisitNow = function closeVisitNow() {
-  saveVisit({ close: true });
+window.closeVisitNow = function closeVisitNow(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  closeVisitToDashboard();
+  return false;
 }
+
+function handleGlobalCloseClick(event) {
+  const closeButton = event.target.closest?.('#closeVisitBtn');
+  if (!closeButton) return;
+  window.closeVisitNow(event);
+}
+
+document.addEventListener('click', handleGlobalCloseClick, true);
 
 $('newVisitBtn').addEventListener('click', startNewVisit);
 $('startVisitHero').addEventListener('click', startNewVisit);
@@ -718,10 +794,10 @@ $('addSkuBtn').addEventListener('click', () => {
 });
 $('exportBtn').addEventListener('click', exportCurrentVisit);
 $('exportBottomBtn').addEventListener('click', exportCurrentVisit);
-$('closeVisitBtn')?.addEventListener('click', window.closeVisitNow);
+$('closeVisitBtn')?.addEventListener('click', window.closeVisitNow, true);
 $('marketVisitForm').addEventListener('submit', (event) => {
   event.preventDefault();
-  saveVisit({ close: true });
+  closeVisitToDashboard();
 });
 
 renderDashboard();
