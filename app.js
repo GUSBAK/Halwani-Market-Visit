@@ -121,8 +121,10 @@ function renderSkus(skus = skusFromProductRange()) {
     row.className = 'sku-row';
     row.innerHTML = `
       <div class="range-row-clean">
-        <input class="sku-name" value="${escapeHtml(sku.name || '')}" placeholder="Product name">
-        <input class="sku-code" value="${escapeHtml(sku.code || '')}" placeholder="Code">
+        <div class="range-input-pair">
+          <input class="sku-name" value="${escapeHtml(sku.name || '')}" placeholder="Product name">
+          <input class="sku-code" value="${escapeHtml(sku.code || '')}" placeholder="Code">
+        </div>
         <label><input class="sku-available" type="checkbox" ${sku.available ? 'checked' : ''}> Available</label>
       </div>
     `;
@@ -279,18 +281,18 @@ function collectVisit() {
   });
 
   const skus = [...document.querySelectorAll('.sku-row')].map(row => ({
-    name: row.querySelector('.sku-name').value,
-    code: row.querySelector('.sku-code').value,
-    available: row.querySelector('.sku-available').checked
+    name: row.querySelector('.sku-name')?.value || '',
+    code: row.querySelector('.sku-code')?.value || '',
+    available: row.querySelector('.sku-available')?.checked ?? true
   })).filter(sku => sku.name.trim() || sku.code.trim());
 
   const actions = [...document.querySelectorAll('.action-row')].map(row => ({
-    title: row.querySelector('.action-title').value,
-    owner: row.querySelector('.action-owner').value,
-    priority: row.querySelector('.action-priority').value,
-    dueDate: row.querySelector('.action-due').value,
-    status: row.querySelector('.action-status').value,
-    description: row.querySelector('.action-description').value
+    title: row.querySelector('.action-title')?.value || '',
+    owner: row.querySelector('.action-owner')?.value || '',
+    priority: row.querySelector('.action-priority')?.value || 'Medium',
+    dueDate: row.querySelector('.action-due')?.value || '',
+    status: row.querySelector('.action-status')?.value || 'Open',
+    description: row.querySelector('.action-description')?.value || ''
   })).filter(action => action.title.trim());
 
   return {
@@ -315,7 +317,35 @@ function collectVisit() {
 }
 
 function saveVisit({ close = false } = {}) {
-  const visit = collectVisit();
+  let visit;
+  try {
+    visit = collectVisit();
+  } catch (error) {
+    console.error('Collect visit failed:', error);
+    visit = {
+      id: $('visitId')?.value || uid(),
+      customer: $('customer')?.value || 'Unnamed Customer',
+      branch: $('branch')?.value || 'Unnamed Branch',
+      city: $('city')?.value || '',
+      channel: $('channel')?.value || '',
+      visitor: $('visitor')?.value || '',
+      visitType: $('visitType')?.value || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      closedAt: new Date().toISOString(),
+      gps: state.gps,
+      checklist: {},
+      skus: [],
+      photos: state.photos || [],
+      competitorNotes: $('competitorNotes')?.value || '',
+      actions: [],
+      visitNotes: $('visitNotes')?.value || ''
+    };
+  }
+
+  if (!visit.customer) visit.customer = 'Unnamed Customer';
+  if (!visit.branch) visit.branch = 'Unnamed Branch';
+
   const existingIndex = state.visits.findIndex(v => v.id === visit.id);
   if (existingIndex >= 0) state.visits[existingIndex] = visit;
   else state.visits.unshift(visit);
@@ -328,7 +358,7 @@ function saveVisit({ close = false } = {}) {
     state.gps = null;
     renderDashboard();
     showScreen('dashboard');
-    setTimeout(() => resetVisitForm(), 50);
+    setTimeout(() => resetVisitForm(), 100);
     toast('Visit closed and saved.');
   } else {
     toast('Visit saved.');
@@ -446,9 +476,9 @@ function addProduct() {
 
 function collectCurrentSkus() {
   return [...document.querySelectorAll('.sku-row')].map(row => ({
-    name: row.querySelector('.sku-name').value,
-    code: row.querySelector('.sku-code').value,
-    available: row.querySelector('.sku-available').checked
+    name: row.querySelector('.sku-name')?.value || '',
+    code: row.querySelector('.sku-code')?.value || '',
+    available: row.querySelector('.sku-available')?.checked ?? true
   })).filter(sku => sku.name.trim() || sku.code.trim());
 }
 
@@ -510,22 +540,22 @@ function exportReport(visit) {
     .pill { display: inline-block; padding: 4px 8px; border-radius: 99px; background: var(--green-soft); color: var(--green-dark); font-weight: bold; }
     .section { break-inside: avoid; page-break-inside: avoid; }
     .photos-section { break-before: page; page-break-before: always; }
-    .photos-grid-report { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
-    .photo-card-report { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; }
-    .photo-card-report img { width: 100%; height: auto; max-height: 240px; object-fit: contain; display: block; background: #fff; }
-    .photo-card-report p { margin: 8px; min-height: 34px; }
+    .photos-grid-report { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
+    .photo-card-report { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; height: 205px; display: grid; grid-template-rows: 160px 45px; }
+    .photo-card-report img { width: 100%; height: 160px; object-fit: contain; display: block; background: #fff; }
+    .photo-card-report p { margin: 6px 8px; font-size: 12px; line-height: 1.2; overflow: hidden; }
     @page { size: A4; margin: 10mm; }
     @media print {
       body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .no-print { display: none; }
-      .photos-grid-report { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .photos-grid-report { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
       .photo-card-report, .section { break-inside: avoid !important; page-break-inside: avoid !important; }
-      .photo-card-report img { max-height: 220px; }
+      .photo-card-report img { width: 100%; height: 160px; object-fit: contain; display: block; background: #fff; }
     }
   </style>
 </head>
 <body>
-  <button class="no-print" onclick="window.print()">Print / Save PDF</button> <button class="no-print" onclick="window.close()">Close Report / Back to App</button>
+  <button class="no-print" onclick="window.print()">Print / Save PDF</button> <button class="no-print" onclick="history.back(); setTimeout(function(){ window.close(); }, 100);">Back to App</button>
 
   <div class="report-header">
     <div>
@@ -623,12 +653,7 @@ $('photoViewer').addEventListener('click', (event) => {
   if (event.target.id === 'photoViewer') closePhotoViewer();
 });
 function closeVisitNow() {
-  try {
-    saveVisit({ close: true });
-  } catch (error) {
-    console.error(error);
-    toast('Close visit failed. Please check required fields.');
-  }
+  saveVisit({ close: true });
 }
 
 $('newVisitBtn').addEventListener('click', startNewVisit);
