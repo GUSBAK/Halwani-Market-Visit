@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Halwani Market Visit</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#006b3f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Market Visit" />
+  <link rel="apple-touch-icon" href="/assets/icon-180.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Halwani Food Service</p>
+        <h1>Market Visit</h1>
+      </div>
+      <button id="newVisitBtn" class="primary small">New Visit</button>
+    </header>
+
+    <main>
+      <section id="dashboard" class="screen active">
+        <div class="hero-card">
+          <h2>Visit Control</h2>
+          <p>Capture shelf execution, photos, competitor activity, and actions from one mobile visit flow.</p>
+          <button id="startVisitHero" class="primary">Start New Visit</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span id="totalVisits">0</span>
+            <p>Total visits</p>
+          </div>
+          <div class="stat-card">
+            <span id="openActions">0</span>
+            <p>Open actions</p>
+          </div>
+          <div class="stat-card">
+            <span id="photoCount">0</span>
+            <p>Photos</p>
+          </div>
+        </div>
+
+        <h3>Visit History</h3>
+        <div id="visitList" class="visit-list empty-state">No visits yet. Start your first visit.</div>
+      </section>
+
+      <section id="visitForm" class="screen">
+        <div class="screen-header">
+          <button id="backBtn" class="ghost">← Back</button>
+          <button id="exportBtn" class="icon-btn" title="Export Visit Report">⬇ Export</button>
+        </div>
+
+        <form id="marketVisitForm">
+          <input type="hidden" id="visitId" />
+
+          <section class="card">
+            <h2>Store Check-in</h2>
+            <div class="form-grid">
+              <label>Customer / Chain
+                <input id="customer" required placeholder="Panda, Danube, Tamimi..." />
+              </label>
+              <label>Branch
+                <input id="branch" required placeholder="Branch name" />
+              </label>
+              <label>City
+                <input id="city" placeholder="Jeddah" />
+              </label>
+              <label>Channel
+                <select id="channel">
+                  <option>Modern Trade</option>
+                  <option>Hypermarket</option>
+                  <option>Supermarket</option>
+                  <option>Wholesale</option>
+                  <option>Other</option>
+                </select>
+              </label>
+              <label>Visitor
+                <input id="visitor" placeholder="Your name" />
+              </label>
+              <label>Visit Type
+                <select id="visitType">
+                  <option>Routine Visit</option>
+                  <option>Promotion Check</option>
+                  <option>Launch Check</option>
+                  <option>Complaint Follow-up</option>
+                  <option>Management Visit</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="gps-box">
+              <div>
+                <strong>GPS Check-in</strong>
+                <p id="gpsStatus">Not captured yet.</p>
+              </div>
+              <button type="button" id="captureGps" class="secondary">Capture GPS</button>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Execution Checklist</h2>
+            <div class="checklist" id="checklist"></div>
+          </section>
+
+          <section class="card">
+            <h2>Range Availability</h2>
+            <p class="hint">Tick available SKUs. Add missing SKU notes if needed.</p>
+            <div id="skuList" class="sku-list"></div>
+            <button type="button" id="addSkuBtn" class="ghost wide">+ Add SKU</button>
+          </section>
+
+          <section class="card">
+            <h2>Photos</h2>
+            <p class="hint">Add shelf, promotion, off-shelf display, competitor, or issue photos.</p>
+            <div class="photo-uploader">
+              <select id="photoCategory">
+                <option>Halwani Shelf</option>
+                <option>Planogram Issue</option>
+                <option>Missing SKU</option>
+                <option>Promotion</option>
+                <option>Off-shelf Display</option>
+                <option>Competitor Display</option>
+                <option>Price Tag</option>
+                <option>Store Room</option>
+                <option>Other</option>
+              </select>
+              <input id="photoNote" placeholder="Photo note" />
+              <input id="photoInput" type="file" accept="image/*" capture="environment" multiple />
+            </div>
+            <div id="photoGallery" class="photo-gallery"></div>
+          </section>
+
+          <section class="card">
+            <h2>Competitor Activity</h2>
+            <textarea id="competitorNotes" rows="4" placeholder="Example: Competitor has gondola display, price promo, new pack, extra facings..."></textarea>
+          </section>
+
+          <section class="card">
+            <h2>Actions Required</h2>
+            <div id="actionsList" class="actions-list"></div>
+            <button type="button" id="addActionBtn" class="ghost wide">+ Add Action</button>
+          </section>
+
+          <section class="card">
+            <h2>Visit Notes</h2>
+            <textarea id="visitNotes" rows="4" placeholder="Write general visit notes here..."></textarea>
+          </section>
+
+          <div class="sticky-actions">
+            <button type="submit" class="primary">Save Visit</button>
+            <button type="button" id="exportBottomBtn" class="secondary">Export Report</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <template id="visitCardTemplate">
+    <article class="visit-card">
+      <div>
+        <h4></h4>
+        <p></p>
+      </div>
+      <div class="visit-actions">
+        <button class="ghost open-visit">Open</button>
+        <button class="secondary export-visit">Export</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
