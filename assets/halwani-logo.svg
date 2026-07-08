@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 160" role="img" aria-label="Halwani Bros logo">
+  <rect width="520" height="160" rx="28" fill="#ffffff"/>
+  <g transform="translate(26 20)">
+    <path d="M52 14c25 0 45 19 45 43 0 29-27 55-67 55-9 0-18-1-27-4 32-7 47-25 47-48 0-19-13-34-33-39 10-5 22-7 35-7z" fill="#006b3f"/>
+    <path d="M83 43c15 10 23 24 23 41 0 16-7 30-19 40 25-9 42-29 42-53 0-18-10-32-27-41-3 5-9 10-19 13z" fill="#d6a642"/>
+    <text x="140" y="66" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="800" fill="#006b3f">Halwani</text>
+    <text x="144" y="106" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" letter-spacing="3" fill="#004d2f">BROS</text>
+  </g>
+</svg>

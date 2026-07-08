@@ -1,9 +1,8 @@
 {
   "name": "halwani-market-visit",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
-    "build": "mkdir -p dist && cp index.html styles.css app.js manifest.json dist/ && cp -R assets dist/assets"
-  },
-  "devDependencies": {}
+    "build": "rm -rf dist && mkdir -p dist && cp -R index.html styles.css app.js manifest.json assets dist/"
+  }
 }
