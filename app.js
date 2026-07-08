@@ -120,9 +120,9 @@ function renderSkus(skus = skusFromProductRange()) {
     const row = document.createElement('div');
     row.className = 'sku-row';
     row.innerHTML = `
-      <div class="sku-main-grid simple-sku-grid">
-        <input class="sku-name" value="${escapeHtml(sku.name || '')}" placeholder="SKU name">
-        <input class="sku-code" value="${escapeHtml(sku.code || '')}" placeholder="SKU code">
+      <div class="range-row-clean">
+        <input class="sku-name" value="${escapeHtml(sku.name || '')}" placeholder="Product name">
+        <input class="sku-code" value="${escapeHtml(sku.code || '')}" placeholder="Code">
         <label><input class="sku-available" type="checkbox" ${sku.available ? 'checked' : ''}> Available</label>
       </div>
     `;
@@ -323,9 +323,12 @@ function saveVisit({ close = false } = {}) {
   saveState();
 
   if (close) {
-    resetVisitForm();
+    state.currentVisit = null;
+    state.photos = [];
+    state.gps = null;
     renderDashboard();
     showScreen('dashboard');
+    setTimeout(() => resetVisitForm(), 50);
     toast('Visit closed and saved.');
   } else {
     toast('Visit saved.');
@@ -554,7 +557,7 @@ function exportReport(visit) {
   <section class="section">
     <h2>Range Availability</h2>
     <table>
-      <tr><th>SKU Code</th><th>SKU Name</th><th>Status</th></tr>
+      <tr><th>Code</th><th>Product Name</th><th>Status</th></tr>
       ${(visit.skus || []).map(sku => `<tr><td>${escapeHtml(sku.code || '')}</td><td>${escapeHtml(sku.name || '')}</td><td>${sku.available ? 'Available' : 'Missing'}</td></tr>`).join('')}
     </table>
   </section>
@@ -619,6 +622,15 @@ $('closePhotoViewer').addEventListener('click', closePhotoViewer);
 $('photoViewer').addEventListener('click', (event) => {
   if (event.target.id === 'photoViewer') closePhotoViewer();
 });
+function closeVisitNow() {
+  try {
+    saveVisit({ close: true });
+  } catch (error) {
+    console.error(error);
+    toast('Close visit failed. Please check required fields.');
+  }
+}
+
 $('newVisitBtn').addEventListener('click', startNewVisit);
 $('startVisitHero').addEventListener('click', startNewVisit);
 $('productsTopBtn').addEventListener('click', () => { state.lastScreenBeforeProducts = 'dashboard'; showScreen('productsScreen'); });
@@ -645,7 +657,7 @@ $('addSkuBtn').addEventListener('click', () => {
 });
 $('exportBtn').addEventListener('click', exportCurrentVisit);
 $('exportBottomBtn').addEventListener('click', exportCurrentVisit);
-$('closeVisitBtn').addEventListener('click', () => saveVisit({ close: true }));
+$('closeVisitBtn').addEventListener('click', closeVisitNow);
 $('marketVisitForm').addEventListener('submit', (event) => {
   event.preventDefault();
   saveVisit({ close: true });
