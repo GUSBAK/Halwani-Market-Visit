@@ -52,9 +52,9 @@ body {
   width: 155px;
   height: 110px;
   object-fit: contain;
-  border-radius: 14px;
-  background: white;
-  padding: 3px;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
 }
 
 .topbar h1, .topbar p { margin: 0; }
@@ -295,7 +295,14 @@ button:active, .file-button:active { transform: translateY(1px); }
   .app-shell { padding: 10px; }
   .topbar { align-items: stretch; flex-direction: column; border-radius: 20px; }
   .top-actions, .hero-actions { display: grid; grid-template-columns: 1fr 1fr; }
-  .brand-logo { width: 112px; height: 48px; }
+  .brand-logo {
+  width: 155px;
+  height: 110px;
+  object-fit: contain;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
   .form-grid, .stats-grid, .photo-uploader, .action-grid, .product-add-grid, .add-from-range, .photo-buttons, .photo-gallery, .sku-main-grid { grid-template-columns: 1fr; }
   .visit-card { align-items: stretch; flex-direction: column; }
   .visit-actions { display: grid; grid-template-columns: 1fr 1fr; }
@@ -312,3 +319,77 @@ button:active, .file-button:active { transform: translateY(1px); }
 
 .simple-sku-grid { grid-template-columns: 1.6fr 1fr auto; }
 @media (max-width: 720px) { .simple-sku-grid { grid-template-columns: 1fr; } }
+
+
+input[type="radio"], input[type="checkbox"] {
+  width: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0;
+  margin: 0 8px 0 0;
+  accent-color: var(--green);
+}
+
+.check-status label {
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.check-status label:has(input:checked) {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
+.photo-card img {
+  height: auto;
+  max-height: 260px;
+  object-fit: contain;
+  background: #fff;
+}
+
+.photo-card {
+  cursor: pointer;
+}
+
+.photo-viewer {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.88);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.photo-viewer.active {
+  display: flex;
+}
+
+.photo-viewer img {
+  max-width: 100%;
+  max-height: 86vh;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 12px;
+}
+
+.photo-viewer button {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  background: white;
+  color: var(--green-dark);
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .brand-logo { width: 122px; height: 86px; }
+}

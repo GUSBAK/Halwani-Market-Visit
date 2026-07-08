@@ -182,8 +182,19 @@ function renderPhotos(photos = []) {
         <span>${escapeHtml(photo.note || '')}</span>
       </div>
     `;
+    card.addEventListener('click', () => openPhotoViewer(photo.dataUrl));
     gallery.appendChild(card);
   });
+}
+
+function openPhotoViewer(src) {
+  $('photoViewerImage').src = src;
+  $('photoViewer').classList.add('active');
+}
+
+function closePhotoViewer() {
+  $('photoViewer').classList.remove('active');
+  $('photoViewerImage').src = '';
 }
 
 function renderProductRange() {
@@ -304,10 +315,6 @@ function collectVisit() {
 }
 
 function saveVisit({ close = false } = {}) {
-  if (!$('customer').value.trim() || !$('branch').value.trim()) {
-    toast('Add customer and branch first.');
-    return;
-  }
   const visit = collectVisit();
   const existingIndex = state.visits.findIndex(v => v.id === visit.id);
   if (existingIndex >= 0) state.visits[existingIndex] = visit;
@@ -317,6 +324,7 @@ function saveVisit({ close = false } = {}) {
 
   if (close) {
     resetVisitForm();
+    renderDashboard();
     showScreen('dashboard');
     toast('Visit closed and saved.');
   } else {
@@ -514,7 +522,7 @@ function exportReport(visit) {
   </style>
 </head>
 <body>
-  <button class="no-print" onclick="window.print()">Print / Save PDF</button>
+  <button class="no-print" onclick="window.print()">Print / Save PDF</button> <button class="no-print" onclick="window.close()">Close Report / Back to App</button>
 
   <div class="report-header">
     <div>
@@ -607,6 +615,10 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
+$('closePhotoViewer').addEventListener('click', closePhotoViewer);
+$('photoViewer').addEventListener('click', (event) => {
+  if (event.target.id === 'photoViewer') closePhotoViewer();
+});
 $('newVisitBtn').addEventListener('click', startNewVisit);
 $('startVisitHero').addEventListener('click', startNewVisit);
 $('productsTopBtn').addEventListener('click', () => { state.lastScreenBeforeProducts = 'dashboard'; showScreen('productsScreen'); });
